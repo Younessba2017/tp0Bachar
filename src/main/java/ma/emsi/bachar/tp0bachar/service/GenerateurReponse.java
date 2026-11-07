@@ -16,21 +16,56 @@ public class GenerateurReponse implements Serializable { // Serializable car CDI
     private boolean roleSystemeAffiche = false;
 
     /**
-     * Génère une réponse à une question.
-     * @param question La question à modifier.
-     * @param roleSysteme Le rôle système à utiliser pour la modification de la question.
-     * @return La question modifiée : le rôle système en majuscule au début de la question, s'il n'est pas null,
-     * suivi d'un saut de ligne,
-     * puis la question en minuscule, le tout entouré de "||".
+     * Analyse des logs : chaque ligne commence par INFO, WARNING ou ERROR.
+     * Les lignes vides sont ignorées et les autres lignes sont comptées séparément.
      */
     public String genererReponse(String question, String roleSysteme) {
+        int infos = 0;
+        int avertissements = 0;
+        int erreurs = 0;
+        int autres = 0;
+
+        for (String ligne : question.split("\\R")) {
+            if (ligne.isBlank()) {
+                continue;
+            }
+
+            String niveau = ligne.strip()
+                    .split("\\s+", 2)[0]
+                    .toUpperCase(Locale.ROOT);
+
+            switch (niveau) {
+                case "INFO" -> infos++;
+                case "WARNING" -> avertissements++;
+                case "ERROR" -> erreurs++;
+                default -> autres++;
+            }
+        }
+
+        String bilan;
+        if (erreurs > 0) {
+            bilan = "Des erreurs sont à examiner.";
+        } else if (avertissements > 0) {
+            bilan = "Des avertissements sont à examiner.";
+        } else if (infos > 0) {
+            bilan = "Aucune erreur ni avertissement parmi les lignes reconnues.";
+        } else {
+            bilan = "Aucun niveau de log reconnu.";
+        }
+
         String resultat = "||";
         if (!this.roleSystemeAffiche && roleSysteme != null) {
-            // Ajouter le rôle système en majuscule au début du résultat, suivi d'un saut de ligne.
             resultat += roleSysteme.toUpperCase(Locale.FRENCH) + "\n";
             this.roleSystemeAffiche = true;
         }
-        resultat += question.toLowerCase(Locale.FRENCH) + "||";
+
+        resultat += "Analyse des logs\n"
+                + "INFO : " + infos + "\n"
+                + "WARNING : " + avertissements + "\n"
+                + "ERROR : " + erreurs + "\n"
+                + "Lignes non reconnues : " + autres + "\n"
+                + "Bilan : " + bilan + "||";
+
         return resultat;
     }
 }
